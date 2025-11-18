@@ -52,7 +52,6 @@
                 <version>0.0.8</version>
                 <configuration>
                     <mainClass>it.unito.mailclient.MailClientApp</mainClass>
-                    <javafxVersion>${javafx.version}</javafxVersion>
                 </configuration>
             </plugin>
 

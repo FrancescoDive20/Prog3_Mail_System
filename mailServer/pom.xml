@@ -51,7 +51,6 @@
                 <version>0.0.8</version>
                 <configuration>
                     <mainClass>it.unito.mailserver.MailServerMain</mainClass>
-                    <javafxVersion>${javafx.version}</javafxVersion>
                 </configuration>
             </plugin>
 
