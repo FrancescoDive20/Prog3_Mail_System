@@ -15,8 +15,6 @@
 
     <!-- ==== Modules ==== -->
     <modules>
-        <module>mailServer</module>
-        <module>mailClient</module>
         <module>protocolloCondiviso</module>
         <module>mailServer</module>
         <module>mailClient</module>
