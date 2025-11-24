@@ -1,4 +1,4 @@
-package it.unito.protocol;
+package it.unito.shared;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;

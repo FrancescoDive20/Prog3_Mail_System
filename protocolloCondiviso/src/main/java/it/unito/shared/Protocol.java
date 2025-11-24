@@ -1,4 +1,4 @@
-package it.unito.protocol;
+package it.unito.shared;
 
 /**
  * Protocollo di comunicazione standardizzato tra mail-client e mail-server.

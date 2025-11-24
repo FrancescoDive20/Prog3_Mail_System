@@ -1,11 +1,14 @@
+package it.unito.shared;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.unito.protocol.Email;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.time.LocalDateTime;
 import java.util.List;
 
 public class TestEmail {
     public static void main(String[] args) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
+        mapper.findAndRegisterModules();
 
         Email email = new Email(
                 "123",
