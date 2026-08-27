@@ -5,65 +5,61 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <!-- ==== Parent GAV ==== -->
     <groupId>it.unito</groupId>
     <artifactId>ProgettoMail</artifactId>
     <version>1.0-SNAPSHOT</version>
-
-    <!-- Multi-module project -->
     <packaging>pom</packaging>
 
-    <!-- ==== Modules ==== -->
     <modules>
+        <module>protocolloCondiviso</module>
         <module>mailServer</module>
         <module>mailClient</module>
     </modules>
 
-    <!-- ==== Properties ==== -->
     <properties>
-        <!-- Java version -->
         <java.version>17</java.version>
-
-        <!-- Dependency versions -->
         <jackson.version>2.17.0</jackson.version>
         <javafx.version>21.0.2</javafx.version>
-
-        <!-- Maven compiler targets -->
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
-
-        <!-- Encoding -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
-    <!-- All dependencies managed centrally -->
     <dependencyManagement>
         <dependencies>
-
-            <!-- Jackson (JSON) -->
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
                 <version>${jackson.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-annotations</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.datatype</groupId>
+                <artifactId>jackson-datatype-jsr310</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
 
-            <!-- For eventual use in test modules -->
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter</artifactId>
                 <version>5.10.0</version>
                 <scope>test</scope>
             </dependency>
-
         </dependencies>
     </dependencyManagement>
 
-    <!-- Global build settings -->
     <build>
         <pluginManagement>
             <plugins>
-
-                <!-- Compiler plugin -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
@@ -73,21 +69,16 @@
                         <target>${java.version}</target>
                     </configuration>
                 </plugin>
-
-                <!-- Shade plugin (if one day you want fat JARs) -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-shade-plugin</artifactId>
                     <version>3.5.0</version>
                 </plugin>
-
-                <!-- JavaFX Maven Plugin (used in child modules) -->
                 <plugin>
                     <groupId>org.openjfx</groupId>
                     <artifactId>javafx-maven-plugin</artifactId>
                     <version>0.0.8</version>
                 </plugin>
-
             </plugins>
         </pluginManagement>
     </build>

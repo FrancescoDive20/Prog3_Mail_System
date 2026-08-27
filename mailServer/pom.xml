@@ -37,6 +37,17 @@
             <artifactId>javafx-fxml</artifactId>
             <version>${javafx.version}</version>
         </dependency>
+        <dependency>
+            <groupId>it.unito</groupId>
+            <artifactId>protocolloCondiviso</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>5.10.0</version>
+            <scope>test</scope>
+        </dependency>
 
     </dependencies>
 
@@ -50,7 +61,7 @@
                 <artifactId>javafx-maven-plugin</artifactId>
                 <version>0.0.8</version>
                 <configuration>
-                    <mainClass>it.unito.mailserver.MailServerMain</mainClass>
+                    <mainClass>it.unito.mailserver.MailServerApp</mainClass>
                 </configuration>
             </plugin>
 
