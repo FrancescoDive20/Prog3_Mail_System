@@ -18,7 +18,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class MailboxManager {
 
     private static final MailboxManager INSTANCE = new MailboxManager();
-    private static final String STORAGE_DIR = "server_storage";
+    private static final String STORAGE_DIR = "mailServer/server_storage";
 
     // Mappa per mantenere un lock distinto per ogni utente, ottimizzando la concorrenza
     private final ConcurrentHashMap<String, ReentrantReadWriteLock> userLocks = new ConcurrentHashMap<>();

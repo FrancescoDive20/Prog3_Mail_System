@@ -65,13 +65,43 @@ public class ClientHandler implements Runnable {
     }
 
     private void handleCheckUser(String[] params, PrintWriter out) {
-        // Implementazione verifica utente
-        out.println(Protocol.RES_USER_EXISTS);
+        if (params.length < 2) {
+            out.println(Protocol.ERR_INVALID_CMD);
+            return;
+        }
+        String email = params[1];
+        java.io.File mailbox = new java.io.File("mailServer/server_storage", email + "_inbox.json");
+
+        // LOG DI DEBUG: Stampiamo il percorso esatto nella console del server
+        MailServerApp.logInfo("Verifica utente: " + email);
+        MailServerApp.logInfo("Cerco il file esattamente in: " + mailbox.getAbsolutePath());
+
+        if (mailbox.exists()) {
+            out.println(Protocol.RES_USER_EXISTS);
+        } else {
+            out.println(Protocol.RES_USER_NOT_FOUND);
+        }
     }
 
     private void handleFetchNew(String[] params, PrintWriter out) {
-        // Esempio: recupero dal MailboxManager e invio JSON
-        out.println(Protocol.RES_NO_NEW_MESSAGES);
+        if (params.length < 2) {
+            out.println(Protocol.ERR_INVALID_CMD);
+            return;
+        }
+        String email = params[1];
+        try {
+            // Legge le email garantendo la concorrenza in lettura[cite: 30]
+            java.util.List<it.unito.shared.Email> emails = MailboxManager.getInstance().loadEmailsForUser(email);
+            if (emails.isEmpty()) {
+                out.println(Protocol.RES_NO_NEW_MESSAGES);
+            } else {
+                out.println(Protocol.RES_NEW_MESSAGES);
+                // Invia la lista serializzata in JSON
+                out.println(mapper.writeValueAsString(emails));
+            }
+        } catch (Exception e) {
+            out.println(Protocol.ERR_SERVER_INTERNAL);
+        }
     }
 
     private void handleSendEmail(String[] params, PrintWriter out, BufferedReader in) throws IOException {
