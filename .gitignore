@@ -1,7 +1,15 @@
+# Dati a runtime
+server_storage/
+mailServer/server_storage/
+
+# File temporanei e di backup
+*.swp
+PowerShell
+*pom - *.xml
 target/ 
 *.log
 *.class
 *.idea/
 *.iml
 .DS_Store
-
+oft*

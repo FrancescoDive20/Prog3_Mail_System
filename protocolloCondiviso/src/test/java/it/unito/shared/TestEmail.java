@@ -11,48 +11,49 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Suite di test per la validazione del processo di serializzazione
+ * e deserializzazione (marshalling/unmarshalling) dell'entità di dominio.
+ */
 class TestEmail {
 
     private ObjectMapper mapper;
 
     @BeforeEach
     void setUp() {
-        // Inizializzazione del mapper prima di ogni test (Principio di Isolamento)
         mapper = new ObjectMapper();
-        // Registrazione dei moduli JSR-310 necessaria per mappare correttamente LocalDateTime
-        mapper.findAndRegisterModules();
+        mapper.findAndRegisterModules(); // Supporto JSR-310 per LocalDateTime
     }
 
     @Test
-    @DisplayName("Verifica serializzazione e deserializzazione JSON completa dell'entità Email")
+    @DisplayName("Verifica serializzazione e deserializzazione JSON dell'entità Email")
     void testSerializationAndDeserialization() throws Exception {
-        // Arrange: Costruzione del mock di test
-        // Troncamento ai millisecondi per evitare asimmetrie di precisione tra OS e JSON
+        // Arrange: Costruzione dell'oggetto di test.
+        // Viene applicato un troncamento per prevenire artefatti di precisione temporale durante la serializzazione.
         LocalDateTime now = LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS);
         Email originalEmail = new Email(
-                "123",
+                "123-UUID",
                 "alice@mia.mail.com",
                 List.of("bob@mia.mail.com"),
-                "Hello",
-                "Ciao Bob!",
+                "Oggetto di test",
+                "Corpo del messaggio",
                 now
         );
 
-        // Act: Processo di marshalling e unmarshalling
+        // Act: Esecuzione delle operazioni di marshalling e unmarshalling
         String json = mapper.writeValueAsString(originalEmail);
         Email restoredEmail = mapper.readValue(json, Email.class);
 
-        // Assert: Validazione tramite Oracolo Automatico
-        assertNotNull(restoredEmail, "L'oggetto deserializzato non deve essere nullo");
+        // Assert: Validazione strutturale post-deserializzazione
+        assertNotNull(restoredEmail, "L'oggetto deserializzato risulta nullo.");
 
-        // Giustificazione Ingegneristica: Poiché Email.equals() valuta solo l'ID,
-        // asseriamo manualmente ogni singola proprietà di dominio per garantire
-        // che l'integrità strutturale sia mantenuta al 100% post-deserializzazione.
-        assertEquals(originalEmail.getId(), restoredEmail.getId(), "Mancata corrispondenza: ID");
-        assertEquals(originalEmail.getSender(), restoredEmail.getSender(), "Mancata corrispondenza: Mittente");
-        assertEquals(originalEmail.getRecipients(), restoredEmail.getRecipients(), "Mancata corrispondenza: Destinatari");
-        assertEquals(originalEmail.getSubject(), restoredEmail.getSubject(), "Mancata corrispondenza: Oggetto");
-        assertEquals(originalEmail.getBody(), restoredEmail.getBody(), "Mancata corrispondenza: Corpo del messaggio");
-        assertEquals(originalEmail.getTimestamp(), restoredEmail.getTimestamp(), "Mancata corrispondenza: Timestamp");
+        // Poiché il metodo equals() valuta unicamente l'ID per convenzione di dominio,
+        // si esegue un'asserzione esplicita su ogni campo per garantire la totale integrità dei dati.
+        assertEquals(originalEmail.getId(), restoredEmail.getId(), "L'ID non coincide.");
+        assertEquals(originalEmail.getSender(), restoredEmail.getSender(), "Il mittente non coincide.");
+        assertEquals(originalEmail.getRecipients(), restoredEmail.getRecipients(), "I destinatari non coincidono.");
+        assertEquals(originalEmail.getSubject(), restoredEmail.getSubject(), "L'oggetto non coincide.");
+        assertEquals(originalEmail.getBody(), restoredEmail.getBody(), "Il corpo del messaggio non coincide.");
+        assertEquals(originalEmail.getTimestamp(), restoredEmail.getTimestamp(), "Il timestamp non coincide.");
     }
 }

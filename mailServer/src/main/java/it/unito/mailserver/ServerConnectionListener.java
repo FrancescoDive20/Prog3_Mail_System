@@ -7,31 +7,33 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Accetta le connessioni in ingresso e le delega a un Thread Pool.
+ * Listener di rete incaricato di accettare le connessioni TCP in ingresso.
+ * Delega l'elaborazione di ciascuna sessione client a un Thread Pool per
+ * ottimizzare l'uso delle risorse di sistema.
  */
 public class ServerConnectionListener implements Runnable {
 
     private final int port;
-    // Vincolo: uso di ExecutorService al posto di thread manuali
+    /** Struttura dati per la gestione efficiente dei thread (prevenzione dell'overhead di creazione). */
     private final ExecutorService threadPool;
 
     public ServerConnectionListener(int port) {
         this.port = port;
-        // Pool dimensionato in base al carico previsto
+        // Istanzia un pool di thread a dimensione fissa adeguato al carico previsto
         this.threadPool = Executors.newFixedThreadPool(10);
     }
 
     @Override
     public void run() {
-        // Vincolo: chiusura sicura del ServerSocket tramite try-with-resources
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             MailServerApp.logInfo("Server in ascolto sulla porta " + port);
 
+            // Ciclo infinito bloccante per l'accettazione delle richieste
             while (!Thread.currentThread().isInterrupted()) {
                 Socket clientSocket = serverSocket.accept();
                 MailServerApp.logInfo("Nuova connessione accettata: " + clientSocket.getInetAddress());
 
-                // Deleghiamo la gestione al pool
+                // Affida l'esecuzione del Runnable (ClientHandler) a uno dei thread del pool
                 threadPool.submit(new ClientHandler(clientSocket));
             }
         } catch (IOException e) {

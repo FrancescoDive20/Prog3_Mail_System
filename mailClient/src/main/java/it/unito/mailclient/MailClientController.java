@@ -1,5 +1,6 @@
 package it.unito.mailclient;
-
+import javafx.animation.FadeTransition;
+import javafx.util.Duration;
 import it.unito.shared.Email;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -17,6 +18,11 @@ import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+/**
+ * Controller dell'architettura MVC basato sul paradigma Event-Driven.
+ * Intercetta le azioni dell'utente sulla View (Event Handlers), demanda l'I/O di rete
+ * a un Thread Pool dedicato per non bloccare la GUI, e aggiorna il DataModel.
+ */
 public class MailClientController {
 
     @FXML private TextField loginEmailField;
@@ -25,8 +31,8 @@ public class MailClientController {
     @FXML private Label statusLabel;
     @FXML private Label userLabel;
     @FXML private ListView<Email> inboxListView;
+    @FXML private TextArea readArea;
 
-    // Campi composizione
     @FXML private TextField toField;
     @FXML private TextField subjectField;
     @FXML private TextArea bodyArea;
@@ -35,24 +41,33 @@ public class MailClientController {
     private DataModel dataModel;
     private NetworkClient networkClient;
     private SyncScheduler syncScheduler;
+
+    /** Gestore dei thread delegato alle richieste spot (login, invio, eliminazione). */
     private ExecutorService actionExecutor;
 
-    // Validazione Regex robusta
     private static final String EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
     private static final Pattern EMAIL_PATTERN = Pattern.compile(EMAIL_REGEX);
 
+    /**
+     * Metodo di callback invocato dall'FXMLLoader al termine dell'iniezione delle dipendenze (@FXML).
+     * Inizializza il Model, il layer di rete e stabilisce i vincoli di binding (Observer Pattern).
+     */
     public void initialize() {
+
+        FadeTransition fadeIn = new FadeTransition(Duration.millis(800), mainBox);
+        fadeIn.setFromValue(0.0);
+        fadeIn.setToValue(1.0);
+        fadeIn.play();
+
         dataModel = new DataModel();
         networkClient = new NetworkClient("127.0.0.1", 8081);
         syncScheduler = new SyncScheduler(networkClient, dataModel);
-        actionExecutor = Executors.newCachedThreadPool(); // Per azioni spot come login o invio
+        actionExecutor = Executors.newCachedThreadPool();
 
-        // Binding reattivo tra Modello e View
         userLabel.textProperty().bind(dataModel.currentUserProperty());
         statusLabel.textProperty().bind(dataModel.connectionStatusProperty());
         inboxListView.setItems(dataModel.getInbox());
 
-        // Personalizzazione celle ListView (opzionale ma consigliata)
         inboxListView.setCellFactory(param -> new ListCell<>() {
             @Override
             protected void updateItem(Email item, boolean empty) {
@@ -60,47 +75,57 @@ public class MailClientController {
                 if (empty || item == null) {
                     setText(null);
                 } else {
-                    setText(item.getSender() + " - " + item.getSubject()); // [cite: 40, 46]
+                    setText(item.getSender() + " - " + item.getSubject());
                 }
             }
         });
 
-        mainBox.setDisable(true); // Disabilita l'interfaccia principale fino al login
+        inboxListView.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
+            if (newSelection != null) {
+                readArea.setText("Da: " + newSelection.getSender() + "\nA: " + String.join(", ", newSelection.getRecipients()) +
+                        "\nData: " + newSelection.getTimestamp() + "\n\n" + newSelection.getBody());
+            } else {
+                readArea.clear();
+            }
+        });
+
+        mainBox.setDisable(true);
     }
 
+    /**
+     * Gestisce la procedura di login.
+     * Effettua la validazione formale tramite espressioni regolari (Regex) prima
+     * di interrogare asincronamente il server, minimizzando il traffico di rete inutile.
+     */
     @FXML
     private void handleLogin(ActionEvent event) {
         String email = loginEmailField.getText().trim();
         if (!EMAIL_PATTERN.matcher(email).matches()) {
-            showAlert(Alert.AlertType.ERROR, "Errore di Validazione", "Inserisci un indirizzo email valido.");
+            showAlert(Alert.AlertType.ERROR, "Errore di Validazione", "Indirizzo email non valido.");
             return;
         }
-
         loginButton.setDisable(true);
-        dataModel.setConnectionStatus("Verifica credenziali in corso...");
+        dataModel.setConnectionStatus("Verifica in corso...");
 
-        // Operazione di rete in background per non bloccare la GUI
         actionExecutor.submit(() -> {
             try {
                 boolean exists = networkClient.checkUser(email);
-
                 Platform.runLater(() -> {
                     if (exists) {
                         dataModel.setCurrentUser(email);
                         dataModel.setConnectionStatus("Connesso come " + email);
                         mainBox.setDisable(false);
                         loginEmailField.setDisable(true);
-                        syncScheduler.startPolling(); // Avvia il polling asincrono
+                        syncScheduler.startPolling();
                     } else {
                         dataModel.setConnectionStatus("Utente non trovato.");
-                        showAlert(Alert.AlertType.WARNING, "Login Fallito", "L'utente non esiste sul server.");
+                        showAlert(Alert.AlertType.WARNING, "Login Fallito", "Utente inesistente.");
                         loginButton.setDisable(false);
                     }
                 });
             } catch (IOException e) {
                 Platform.runLater(() -> {
                     dataModel.setConnectionStatus("Errore di connessione.");
-                    showAlert(Alert.AlertType.ERROR, "Errore di Rete", "Impossibile contattare il server.");
                     loginButton.setDisable(false);
                 });
             }
@@ -114,11 +139,10 @@ public class MailClientController {
         String body = bodyArea.getText();
 
         if (recipientsRaw.isEmpty() || subject.isEmpty()) {
-            showAlert(Alert.AlertType.WARNING, "Campi Obbligatori", "Destinatario e Oggetto non possono essere vuoti.");
+            showAlert(Alert.AlertType.WARNING, "Campi vuoti", "Destinatario e Oggetto obbligatori.");
             return;
         }
 
-        // Parsing e validazione destinatari (separati da virgola o punto e virgola)
         List<String> recipients = Arrays.stream(recipientsRaw.split("[,;]"))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
@@ -126,46 +150,89 @@ public class MailClientController {
 
         for (String rec : recipients) {
             if (!EMAIL_PATTERN.matcher(rec).matches()) {
-                showAlert(Alert.AlertType.ERROR, "Errore di Validazione", "Indirizzo destinatario non valido: " + rec);
+                showAlert(Alert.AlertType.ERROR, "Errore", "Indirizzo destinatario non valido: " + rec);
                 return;
             }
         }
 
         sendButton.setDisable(true);
-        dataModel.setConnectionStatus("Invio messaggio in corso...");
+        Email newEmail = new Email(UUID.randomUUID().toString(), dataModel.getCurrentUser(), recipients, subject, body, LocalDateTime.now());
 
-        // Costruzione dell'oggetto Email [cite: 13, 21]
-        Email newEmail = new Email(
-                UUID.randomUUID().toString(),
-                dataModel.getCurrentUser(),
-                recipients,
-                subject,
-                body,
-                LocalDateTime.now()
-        );
-
-        // Invio in background
         actionExecutor.submit(() -> {
             try {
                 boolean success = networkClient.sendEmail(newEmail);
                 Platform.runLater(() -> {
                     if (success) {
-                        dataModel.setConnectionStatus("Messaggio inviato con successo.");
                         clearComposeFields();
+                        dataModel.setConnectionStatus("Messaggio inviato.");
                     } else {
-                        dataModel.setConnectionStatus("Errore: invio fallito dal server.");
-                        showAlert(Alert.AlertType.ERROR, "Errore Server", "Il server ha rifiutato l'invio.");
+                        showAlert(Alert.AlertType.ERROR, "Errore Server", "Invio rifiutato dal server.");
                     }
                 });
             } catch (IOException e) {
-                Platform.runLater(() -> {
-                    dataModel.setConnectionStatus("Errore di rete durante l'invio.");
-                    showAlert(Alert.AlertType.ERROR, "Errore di Rete", "Impossibile inviare il messaggio.");
-                });
+                Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Errore di Rete", "Server disconnesso. Invio fallito."));
             } finally {
                 Platform.runLater(() -> sendButton.setDisable(false));
             }
         });
+    }
+
+    @FXML
+    private void handleReply() {
+        Email selected = inboxListView.getSelectionModel().getSelectedItem();
+        if (selected != null) {
+            toField.setText(selected.getSender());
+            subjectField.setText("Re: " + selected.getSubject());
+            bodyArea.setText("\n\n--- Messaggio Originale ---\n" + selected.getBody());
+        }
+    }
+
+    @FXML
+    private void handleReplyAll() {
+        Email selected = inboxListView.getSelectionModel().getSelectedItem();
+        if (selected != null) {
+            String allRecipients = selected.getSender() + ", " + String.join(", ", selected.getRecipients());
+            toField.setText(allRecipients.replace(dataModel.getCurrentUser() + ", ", "").replace(", " + dataModel.getCurrentUser(), ""));
+            subjectField.setText("Re: " + selected.getSubject());
+            bodyArea.setText("\n\n--- Messaggio Originale ---\n" + selected.getBody());
+        }
+    }
+
+    @FXML
+    private void handleForward() {
+        Email selected = inboxListView.getSelectionModel().getSelectedItem();
+        if (selected != null) {
+            toField.clear();
+            subjectField.setText("Fwd: " + selected.getSubject());
+            bodyArea.setText("\n\n--- Messaggio Inoltrato da " + selected.getSender() + " ---\n" + selected.getBody());
+        }
+    }
+
+    /**
+     * Rimuove il messaggio sia in locale che sul server remoto.
+     * Operazione asincrona che garantisce la responsività dell'interfaccia utente.
+     */
+    @FXML
+    private void handleDelete() {
+        Email selected = inboxListView.getSelectionModel().getSelectedItem();
+        if (selected != null) {
+            actionExecutor.submit(() -> {
+                try {
+                    boolean success = networkClient.deleteEmail(dataModel.getCurrentUser(), selected.getId());
+                    if (success) {
+                        Platform.runLater(() -> {
+                            dataModel.getInbox().remove(selected);
+                            readArea.clear();
+                            dataModel.setConnectionStatus("Email eliminata.");
+                        });
+                    } else {
+                        Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Errore Server", "Impossibile rimuovere l'email dal server."));
+                    }
+                } catch (IOException e) {
+                    Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Errore Rete", "Server offline. Cancellazione fallita."));
+                }
+            });
+        }
     }
 
     private void clearComposeFields() {
@@ -182,7 +249,7 @@ public class MailClientController {
         alert.showAndWait();
     }
 
-    // Metodo da chiamare alla chiusura dell'app (dal MailClientApp)
+    /** Esegue un arresto controllato (graceful shutdown) dei thread in background. */
     public void shutdown() {
         if (syncScheduler != null) syncScheduler.stopPolling();
         if (actionExecutor != null) actionExecutor.shutdownNow();

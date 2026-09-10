@@ -7,9 +7,13 @@ import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Suite di test per la validazione della sintassi di rete (Protocol)
+ * e la correttezza delle espressioni regolari (Regex) lato client/server.
+ */
 class TestEmailUser {
 
-    // Regex per validazione formale robusta lato client e server
+    // Regex per la validazione formale degli indirizzi email
     private static final String EMAIL_REGEX = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$";
     private static final Pattern EMAIL_PATTERN = Pattern.compile(EMAIL_REGEX);
 
@@ -26,7 +30,7 @@ class TestEmailUser {
 
         // Assert
         assertEquals(expectedMessage, actualMessage,
-                "Il payload generato non rispetta lo standard delimitato da punto e virgola");
+                "Il payload generato non rispetta il formato delimitato atteso.");
     }
 
     @Test
@@ -36,21 +40,20 @@ class TestEmailUser {
         String rawMessage = "SEND_EMAIL;alice@mia.mail.com;bob@mia.mail.com;Test;Messaggio";
 
         // Act
-        // N.B: Il test assume che Protocol.parse() restituisca correttamente String[] e non String come erroneamente indicato in PDF
         String[] parsedData = Protocol.parse(rawMessage);
 
         // Assert
-        assertNotNull(parsedData, "Il parser non deve mai restituire un reference nullo");
-        assertEquals(5, parsedData.length, "Il numero di token estratti è discordante");
+        assertNotNull(parsedData, "Il parser ha restituito un riferimento nullo.");
+        assertEquals(5, parsedData.length, "Il numero di token estratti non è corretto.");
         assertEquals(Protocol.CMD_SEND_EMAIL, parsedData[0]);
         assertEquals("alice@mia.mail.com", parsedData[1]);
         assertEquals("Messaggio", parsedData[4]);
     }
 
     @Test
-    @DisplayName("Test Metodologico Regex Email: Esito Positivo")
+    @DisplayName("Test Regex Email: Validazione Casi Nominali")
     void testEmailRegexValid() {
-        // Arrange: Boundary analysis dei casi nominali
+        // Arrange: Insieme di input conformi (Boundary Analysis)
         String[] validEmails = {
                 "alice@mia.mail.com",
                 "nome.cognome@unito.it",
@@ -61,28 +64,28 @@ class TestEmailUser {
         for (String email : validEmails) {
             Matcher matcher = EMAIL_PATTERN.matcher(email);
             assertTrue(matcher.matches(),
-                    () -> "Falso Negativo: L'email valida '" + email + "' è stata rigettata.");
+                    () -> "Falso Negativo: L'indirizzo valido '" + email + "' è stato rigettato.");
         }
     }
 
     @Test
-    @DisplayName("Test Metodologico Regex Email: Esito Negativo")
+    @DisplayName("Test Regex Email: Validazione Anomalie ed Edge Cases")
     void testEmailRegexInvalid() {
-        // Arrange: Fault injection ed edge cases
+        // Arrange: Fault injection per testare la robustezza dell'espressione
         String[] invalidEmails = {
-                "",                     // E-01: Stringa vuota
-                "alice_at_mia.com",     // E-02: Mancanza del separatore @
-                "@unito.it",            // E-03: Mancanza della local-part
-                "bob@.com",             // E-04: Dominio primario assente
-                "bob@dominio",          // E-05: Mancanza del Top Level Domain (TLD)
-                "bob@dominio.c"         // E-06: TLD insufficiente (minimo 2 caratteri)
+                "",                     // Stringa vuota
+                "alice_at_mia.com",     // Mancanza del separatore @
+                "@unito.it",            // Mancanza della local-part
+                "bob@.com",             // Dominio primario assente
+                "bob@dominio",          // Mancanza del Top Level Domain (TLD)
+                "bob@dominio.c"         // TLD insufficiente
         };
 
         // Act & Assert
         for (String email : invalidEmails) {
             Matcher matcher = EMAIL_PATTERN.matcher(email);
             assertFalse(matcher.matches(),
-                    () -> "Falso Positivo: L'email invalida '" + email + "' ha superato i controlli di validazione.");
+                    () -> "Falso Positivo: L'indirizzo invalido '" + email + "' ha superato i controlli.");
         }
     }
 }

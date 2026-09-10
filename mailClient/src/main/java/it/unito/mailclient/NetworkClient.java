@@ -14,8 +14,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Gestisce le operazioni di I/O di rete verso il server.
- * Implementa un approccio "apri-invia-ricevi-chiudi" per ogni richiesta.
+ * Gestore dell'I/O di rete.
+ * Questa classe incapsula le logiche di connessione tramite Java Socket.
+ * Adotta un approccio "Stateless": il socket viene aperto e chiuso ad ogni operazione.
+ * Tale paradigma garantisce un elevato livello di scalabilità e resilienza ai guasti di rete.
  */
 public class NetworkClient {
 
@@ -27,46 +29,52 @@ public class NetworkClient {
         this.serverHost = host;
         this.serverPort = port;
         this.mapper = new ObjectMapper();
-        this.mapper.findAndRegisterModules(); // Supporto per LocalDateTime
+        this.mapper.findAndRegisterModules();
     }
 
     /**
-     * Verifica se un utente esiste sul server.
+     * Interroga il server per verificare la presenza di un utente.
+     *
+     * @param emailAddress L'indirizzo da validare lato backend.
+     * @return {@code true} se l'utente esiste.
+     * @throws IOException In caso di irraggiungibilità del server.
      */
     public boolean checkUser(String emailAddress) throws IOException {
         try (Socket socket = new Socket(serverHost, serverPort);
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
 
-            // Invia richiesta costruita tramite il protocollo [cite: 136]
             out.println(Protocol.build(Protocol.CMD_CHECK_USER, emailAddress));
             String response = in.readLine();
-
-            // Verifica la risposta [cite: 111]
             return Protocol.RES_USER_EXISTS.equals(response);
         }
     }
 
     /**
-     * Invia un'email al server.
+     * Invia un oggetto Email serializzato (marshalling JSON) al server.
+     *
+     * @param email L'istanza dell'email da trasmettere.
+     * @return {@code true} se il salvataggio remoto avviene con successo.
      */
     public boolean sendEmail(Email email) throws IOException {
         try (Socket socket = new Socket(serverHost, serverPort);
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
 
-            // Comando principale [cite: 98]
             out.println(Protocol.build(Protocol.CMD_SEND_EMAIL));
-            // Payload JSON [cite: 82]
             out.println(mapper.writeValueAsString(email));
-
             String response = in.readLine();
-            return Protocol.RES_OK.equals(response); // [cite: 108]
+            return Protocol.RES_OK.equals(response);
         }
     }
 
     /**
-     * Richiede nuovi messaggi per l'utente, opzionalmente fornendo l'ID dell'ultimo messaggio noto.
+     * Esegue il recupero differenziale dei messaggi (delta sync).
+     * Ottimizza l'utilizzo della banda passante inviando al server l'ID dell'ultima email nota.
+     *
+     * @param userEmail L'utente che richiede i messaggi.
+     * @param lastKnownMessageId L'ID dell'ultimo messaggio ricevuto, oppure null al primo avvio.
+     * @return La lista deserializzata delle nuove email.
      */
     public List<Email> fetchNewMessages(String userEmail, String lastKnownMessageId) throws IOException {
         try (Socket socket = new Socket(serverHost, serverPort);
@@ -77,18 +85,33 @@ public class NetworkClient {
                     Protocol.build(Protocol.CMD_FETCH_NEW, userEmail) :
                     Protocol.build(Protocol.CMD_FETCH_NEW, userEmail, lastKnownMessageId);
 
-            out.println(cmd); // [cite: 96]
-
+            out.println(cmd);
             String response = in.readLine();
 
-            if (Protocol.RES_NEW_MESSAGES.equals(response)) { // [cite: 115]
-                // Il server ha risposto affermativamente, leggiamo il JSON successivo
+            if (Protocol.RES_NEW_MESSAGES.equals(response)) {
                 String jsonPayload = in.readLine();
                 if (jsonPayload != null) {
                     return mapper.readValue(jsonPayload, new TypeReference<List<Email>>() {});
                 }
             }
-            return new ArrayList<>(); // Nessun nuovo messaggio o errore [cite: 117]
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * Trasmette il comando di eliminazione permanente di un messaggio.
+     *
+     * @param userEmail Il proprietario della mailbox.
+     * @param emailId L'identificatore univoco del messaggio da eliminare.
+     * @return {@code true} in caso di avvenuta cancellazione sul server.
+     */
+    public boolean deleteEmail(String userEmail, String emailId) throws IOException {
+        try (Socket socket = new Socket(serverHost, serverPort);
+             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+
+            out.println(Protocol.build(Protocol.CMD_DELETE_EMAIL, userEmail, emailId));
+            return Protocol.RES_OK.equals(in.readLine());
         }
     }
 }

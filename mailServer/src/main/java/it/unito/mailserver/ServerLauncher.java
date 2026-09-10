@@ -1,11 +1,11 @@
 package it.unito.mailserver;
 
 /**
- * Classe di avvio fittizia per bypassare le restrizioni del Module Path di JavaFX.
+ * Classe wrapper necessaria per avviare l'applicazione JavaFX
+ * bypassando le restrizioni modulari imposte dal Module Path di Java.
  */
 public class ServerLauncher {
     public static void main(String[] args) {
-        // Richiama il main della vera applicazione JavaFX
         MailServerApp.main(args);
     }
 }

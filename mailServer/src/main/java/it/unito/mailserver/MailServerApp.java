@@ -8,8 +8,9 @@ import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 
 /**
- * Entry point dell'applicazione Server.
- * Inizializza la GUI e avvia il demone di ascolto su un thread separato.
+ * Entry point dell'applicazione Server basata su JavaFX.
+ * Inizializza l'interfaccia grafica per il logging e avvia il demone di rete
+ * incaricato di ascoltare le connessioni in ingresso su un thread separato.
  */
 public class MailServerApp extends Application {
 
@@ -31,7 +32,7 @@ public class MailServerApp extends Application {
 
         logInfo("Avvio del server in corso...");
 
-        // Avvio del listener su un thread separato per non bloccare la GUI
+        // Delega l'ascolto su socket a un thread demone per non bloccare il JavaFX Application Thread
         ServerConnectionListener listener = new ServerConnectionListener(8081);
         serverThread = new Thread(listener);
         serverThread.setDaemon(true);
@@ -39,8 +40,11 @@ public class MailServerApp extends Application {
     }
 
     /**
-     * Metodo thread-safe per iniettare log nella GUI da thread secondari.
-     * L'uso di Platform.runLater è tassativo.
+     * Metodo thread-safe per iniettare stringhe di log nella GUI da thread secondari.
+     * Sfrutta {@link Platform#runLater} per schedulare l'aggiornamento sul thread grafico,
+     * prevenendo eccezioni di concorrenza.
+     *
+     * @param message Il messaggio testuale da inserire nel log.
      */
     public static void logInfo(String message) {
         Platform.runLater(() -> logArea.appendText(message + "\n"));

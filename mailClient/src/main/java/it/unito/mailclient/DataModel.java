@@ -7,18 +7,21 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
 /**
- * Modello MVC dell'applicazione client.
- * Gestisce lo stato in modo reattivo tramite JavaFX Properties.
+ * Rappresenta il Model nell'architettura MVC dell'applicazione client.
+ * Incapsula lo stato dell'interfaccia e i dati di dominio.
+ * Sfrutta le primitive di JavaFX (Properties e ObservableList) per implementare
+ * nativamente il pattern Observer-Observable senza l'ausilio di classi deprecate.
  */
 public class DataModel {
 
-    // L'utente attualmente loggato. Una StringProperty permette alla GUI di reagire ai cambiamenti.
     private final StringProperty currentUser = new SimpleStringProperty("");
-
-    // Stato della connessione (es. "Connesso", "Errore di rete").
     private final StringProperty connectionStatus = new SimpleStringProperty("Disconnesso");
 
-    // La lista delle email. Essendo Observable, la ListView (o TableView) si aggiornerà automaticamente.
+    /**
+     * Struttura dati osservabile. Qualsiasi modifica a questa lista notificherà
+     * automaticamente gli observer registrati (es. la ListView della GUI),
+     * garantendo il disaccoppiamento tra logica e presentazione.
+     */
     private final ObservableList<Email> inbox = FXCollections.observableArrayList();
 
     public String getCurrentUser() {
@@ -50,12 +53,15 @@ public class DataModel {
     }
 
     /**
-     * Aggiunge nuove email alla inbox in modo sicuro.
-     * Questo metodo DEVE essere chiamato solo dal JavaFX Application Thread.
+     * Inserisce le nuove email nel Model.
+     * Per prevenire violazioni di concorrenza, l'invocazione di questo metodo
+     * deve avvenire rigorosamente all'interno del JavaFX Application Thread.
+     *
+     * @param newEmails Collezione iterabile di nuove email da aggiungere.
      */
     public void addEmails(Iterable<Email> newEmails) {
         for (Email e : newEmails) {
-            if (!inbox.contains(e)) { // Evita duplicati (l'equals di Email si basa sull'ID)
+            if (!inbox.contains(e)) {
                 inbox.add(e);
             }
         }

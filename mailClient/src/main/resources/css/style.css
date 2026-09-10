@@ -1,0 +1,128 @@
+/* ===================================================================
+   DESIGN SYSTEM - Mail Client
+   Palette basata su criteri di alta leggibilità e accessibilità (WCAG)
+=================================================================== */
+
+.root {
+    -fx-font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -fx-background-color: #F3F4F6; /* Sfondo grigio neutro per far risaltare le card bianche */
+    -fx-font-size: 14px;
+}
+
+/* ===================================================================
+   PANNELLI E CARD (Profondità e Gerarchia)
+=================================================================== */
+.header-panel {
+    -fx-background-color: #FFFFFF;
+    -fx-padding: 15;
+    /* Ombreggiatura per staccare l'header dal corpo dell'app */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.08), 10, 0, 0, 2);
+}
+
+.main-panel {
+    -fx-padding: 15;
+}
+
+.card {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-color: #E5E7EB;
+    -fx-padding: 15;
+    /* Ombreggiatura morbida per i pannelli interni */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 8, 0, 0, 2);
+}
+
+/* ===================================================================
+   TIPOGRAFIA
+=================================================================== */
+.label-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #1F2937; /* Grigio scuro, non nero assoluto per ridurre l'affaticamento */
+}
+
+.label-bold {
+    -fx-font-weight: bold;
+    -fx-text-fill: #374151;
+}
+
+.status-label {
+    -fx-font-weight: bold;
+    -fx-text-fill: #2563EB; /* Blu accessibile */
+}
+
+/* ===================================================================
+   INPUT E LISTE
+=================================================================== */
+.text-field, .text-area {
+    -fx-background-color: #F9FAFB;
+    -fx-border-color: #D1D5DB;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 8;
+}
+
+/* Accessibilità: Focus visibile per navigazione da tastiera */
+.text-field:focused, .text-area:focused {
+    -fx-border-color: #3B82F6;
+    -fx-background-color: #FFFFFF;
+}
+
+.list-view {
+    -fx-background-color: transparent;
+    -fx-border-color: #E5E7EB;
+    -fx-border-radius: 4;
+}
+
+.list-cell {
+    -fx-padding: 10;
+    -fx-border-color: transparent transparent #F3F4F6 transparent; /* Linea separatrice */
+}
+
+.list-cell:filled:selected:focused, .list-cell:filled:selected {
+    -fx-background-color: #EFF6FF; /* Azzurro tenue */
+    -fx-text-fill: #1E3A8A;
+    -fx-font-weight: bold;
+}
+
+/* ===================================================================
+   PULSANTI (Call to Action)
+=================================================================== */
+.button {
+    -fx-font-family: "Segoe UI", sans-serif;
+    -fx-font-weight: bold;
+    -fx-padding: 8 16 8 16;
+    -fx-background-radius: 6;
+    -fx-cursor: hand; /* Cambia cursore al passaggio */
+}
+
+.button-primary {
+    -fx-background-color: #2563EB;
+    -fx-text-fill: white;
+}
+
+.button-primary:hover {
+    -fx-background-color: #1D4ED8;
+}
+
+.button-secondary {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #D1D5DB;
+    -fx-border-radius: 6;
+    -fx-text-fill: #374151;
+}
+
+.button-secondary:hover {
+    -fx-background-color: #F3F4F6;
+}
+
+#deleteButton {
+    -fx-background-color: #FEF2F2;
+    -fx-text-fill: #DC2626;
+    -fx-border-color: #FECACA;
+}
+
+#deleteButton:hover {
+    -fx-background-color: #FEE2E2;
+}

@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!--
+  ==========================================================================
+  VIEW (Pattern MVC) - Interfaccia Grafica del Mail Client
+  ==========================================================================
+  Definizione dichiarativa della GUI tramite JavaFXML.
+  Il file è strettamente disaccoppiato dal Modello e delega la gestione
+  degli eventi e l'aggiornamento dei dati al Controller specificato
+  nell'attributo fx:controller.
+  ==========================================================================
+-->
+<BorderPane xmlns="http://javafx.com/javafx/17"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="it.unito.mailclient.MailClientController"
+            stylesheets="@../css/style.css">
+
+    <!--
+      PANNELLO SUPERIORE: Autenticazione e Stato
+      Contiene i controlli per l'identificazione dell'utente (unica forma di
+      login richiesta) e le label reattive collegate alle Properties del Model.
+    -->
+    <!-- HEADER -->
+    <top>
+        <VBox spacing="10" styleClass="header-panel">
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Label text="Email Login:" styleClass="label-bold" />
+                <TextField fx:id="loginEmailField" promptText="es. mario@unito.it" HBox.hgrow="ALWAYS"/>
+                <Button fx:id="loginButton" text="Accedi" onAction="#handleLogin" styleClass="button-primary">
+                    <tooltip><Tooltip text="Effettua l'accesso al server" /></tooltip>
+                </Button>
+            </HBox>
+
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Label text="Utente attivo:" styleClass="label-bold" />
+                <Label fx:id="userLabel" text="Nessuno" />
+                <Region HBox.hgrow="ALWAYS" />
+                <Label text="Stato Rete:" styleClass="label-bold" />
+                <Label fx:id="statusLabel" text="Disconnesso" styleClass="status-label"/>
+            </HBox>
+        </VBox>
+    </top>
+
+    <!-- CENTER -->
+    <center>
+        <VBox fx:id="mainBox" spacing="15" styleClass="main-panel">
+            <!-- Rimosso il bordo nativo bruttissimo dello splitpane -->
+            <SplitPane dividerPositions="0.45" VBox.vgrow="ALWAYS" style="-fx-background-color: transparent;">
+
+                <!-- SEZIONE SINISTRA (Stile Card) -->
+                <VBox spacing="12" minWidth="350" styleClass="card">
+                    <Label text="Inbox" styleClass="label-title"/>
+
+                    <ListView fx:id="inboxListView" VBox.vgrow="ALWAYS" styleClass="list-view" />
+
+                    <FlowPane hgap="8" vgap="8" alignment="CENTER_LEFT">
+                        <Button text="Rispondi" onAction="#handleReply" styleClass="button-secondary">
+                            <tooltip><Tooltip text="Rispondi al mittente" /></tooltip>
+                        </Button>
+                        <Button text="Rispondi a Tutti" onAction="#handleReplyAll" styleClass="button-secondary">
+                            <tooltip><Tooltip text="Rispondi al mittente e a tutti i destinatari" /></tooltip>
+                        </Button>
+                        <Button text="Inoltra" onAction="#handleForward" styleClass="button-secondary">
+                            <tooltip><Tooltip text="Inoltra il messaggio a terzi" /></tooltip>
+                        </Button>
+                        <Button text="Elimina" onAction="#handleDelete" id="deleteButton">
+                            <tooltip><Tooltip text="Rimuovi permanentemente il messaggio" /></tooltip>
+                        </Button>
+                    </FlowPane>
+
+                    <TextArea fx:id="readArea" editable="false" VBox.vgrow="ALWAYS" promptText="L'area di lettura apparirà qui..." styleClass="text-area"/>
+                </VBox>
+
+                <!-- SEZIONE DESTRA (Stile Card) -->
+                <VBox spacing="12" minWidth="350" styleClass="card">
+                    <Label text="Nuovo Messaggio" styleClass="label-title"/>
+
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Label text="A:" prefWidth="35" styleClass="label-bold"/>
+                        <TextField fx:id="toField" promptText="Destinatari (separati da virgola)" HBox.hgrow="ALWAYS"/>
+                    </HBox>
+
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Label text="Ogg:" prefWidth="35" styleClass="label-bold"/>
+                        <TextField fx:id="subjectField" promptText="Oggetto della mail" HBox.hgrow="ALWAYS"/>
+                    </HBox>
+
+                    <TextArea fx:id="bodyArea" promptText="Scrivi il tuo messaggio qui..." VBox.vgrow="ALWAYS" wrapText="true"/>
+
+                    <HBox alignment="CENTER_RIGHT">
+                        <Button fx:id="sendButton" text="Invia Messaggio" onAction="#handleSendEmail" styleClass="button-primary">
+                            <tooltip><Tooltip text="Trasmetti l'email al server" /></tooltip>
+                        </Button>
+                    </HBox>
+                </VBox>
+
+            </SplitPane>
+        </VBox>
+    </center>
+
+</BorderPane>

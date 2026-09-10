@@ -9,10 +9,10 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Modello condiviso di email tra client e server.
- *
- * Questa classe è nel modulo condiviso per garantirne
- * identicità di struttura su entrambe le applicazioni.
+ * Modello dati condiviso che rappresenta un messaggio di posta elettronica.
+ * La classe implementa {@link Serializable} ed è annotata per il supporto
+ * alla serializzazione/deserializzazione JSON tramite la libreria Jackson.
+ * Garantisce l'identità strutturale dell'entità di dominio tra il livello Client e il Server.
  */
 public class Email implements Serializable {
 
@@ -23,6 +23,18 @@ public class Email implements Serializable {
     private final String body;
     private final LocalDateTime timestamp;
 
+    /**
+     * Costruttore principale dell'entità Email.
+     * Utilizza le annotazioni {@code @JsonCreator} e {@code @JsonProperty} per
+     * permettere a Jackson di ricostruire oggetti immutabili durante l'unmarshalling.
+     *
+     * @param id L'identificatore univoco del messaggio (generalmente un UUID).
+     * @param sender L'indirizzo email del mittente.
+     * @param recipients La lista degli indirizzi email dei destinatari.
+     * @param subject L'oggetto del messaggio.
+     * @param body Il corpo testuale del messaggio.
+     * @param timestamp La data e l'ora di invio del messaggio.
+     */
     @JsonCreator
     public Email(
             @JsonProperty("id") String id,
@@ -40,33 +52,35 @@ public class Email implements Serializable {
         this.timestamp = timestamp;
     }
 
-    /* GETTER NECESSARY PER JACKSON E PER IL CLIENT/SERVER */
-
+    /** @return L'identificatore univoco dell'email. */
     public String getId() {
         return id;
     }
 
+    /** @return L'indirizzo email del mittente. */
     public String getSender() {
         return sender;
     }
 
+    /** @return La lista dei destinatari del messaggio. */
     public List<String> getRecipients() {
         return recipients;
     }
 
+    /** @return L'oggetto del messaggio. */
     public String getSubject() {
         return subject;
     }
 
+    /** @return Il corpo del messaggio. */
     public String getBody() {
         return body;
     }
 
+    /** @return Il timestamp di creazione del messaggio. */
     public LocalDateTime getTimestamp() {
         return timestamp;
     }
-
-    /* UTILITY */
 
     @Override
     public String toString() {
@@ -80,6 +94,9 @@ public class Email implements Serializable {
                 '}';
     }
 
+    /**
+     * Verifica l'uguaglianza tra due email basandosi esclusivamente sull'ID univoco.
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

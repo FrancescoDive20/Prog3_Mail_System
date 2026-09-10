@@ -10,8 +10,11 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Gestisce il polling periodico per scaricare le nuove email.
- * Lavora interamente in background.
+ * Gestore del polling periodico per la sincronizzazione passiva dei messaggi.
+ * Sfrutta uno {@link ScheduledExecutorService} per isolare i task temporizzati
+ * su un Thread demone in background, prevenendo colli di bottiglia sull'interfaccia.
+ * Garantisce inoltre la resilienza del sistema operando tentativi continui (retry)
+ * in caso di inattività del server.
  */
 public class SyncScheduler {
 
@@ -25,40 +28,41 @@ public class SyncScheduler {
         this.dataModel = dataModel;
         this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "SyncScheduler-Thread");
-            t.setDaemon(true); // Termina con l'applicazione
+            t.setDaemon(true);
             return t;
         });
     }
 
+    /** Avvia o riprende l'esecuzione schedulata dei task di aggiornamento. */
     public void startPolling() {
         if (isRunning) return;
         isRunning = true;
-
-        // Esegue il task ogni 5 secondi
         scheduler.scheduleAtFixedRate(this::fetchTask, 0, 5, TimeUnit.SECONDS);
     }
 
+    /** Arresta forzatamente il servizio di polling in fase di shutdown. */
     public void stopPolling() {
         isRunning = false;
         scheduler.shutdownNow();
     }
 
+    /**
+     * Sezione critica di aggiornamento eseguita dal Thread dello scheduler.
+     * Invoca operazioni bloccanti di I/O (fetchNewMessages) e, al termine, delega
+     * le mutazioni di stato della GUI tramite {@code Platform.runLater}.
+     */
     private void fetchTask() {
         String user = dataModel.getCurrentUser();
         if (user == null || user.isBlank()) return;
 
         try {
-            // Ottiene l'ID dell'ultima email (se presente) per un fetch incrementale
             String lastId = null;
             if (!dataModel.getInbox().isEmpty()) {
-                // Presumendo che l'ultima ricevuta sia in fondo (o in cima, dipenda dall'ordinamento)
                 lastId = dataModel.getInbox().get(dataModel.getInbox().size() - 1).getId();
             }
 
-            // Operazione I/O bloccante eseguita sul thread dello scheduler
             List<Email> newEmails = networkClient.fetchNewMessages(user, lastId);
 
-            // Vincolo: aggiornamento del Modello TASSATIVAMENTE sul JavaFX Thread
             if (!newEmails.isEmpty()) {
                 Platform.runLater(() -> {
                     dataModel.addEmails(newEmails);
@@ -69,7 +73,9 @@ public class SyncScheduler {
             }
 
         } catch (IOException e) {
-            Platform.runLater(() -> dataModel.setConnectionStatus("Errore di rete durante la sincronizzazione."));
+            // Gestione Resilienza: Informa l'utente senza provocare il crash dell'applicativo.
+            // Il task si riavvierà ciclicamente ristabilendo la connessione una volta risolto il disservizio.
+            Platform.runLater(() -> dataModel.setConnectionStatus("Server offline. Attesa riconnessione..."));
         }
     }
 }
